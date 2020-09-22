@@ -1,0 +1,98 @@
+version: '3.7'
+
+services:
+  traefik:
+    image: traefik:1.7
+    command: --docker --docker.exposedbydefault=false
+    ports:
+      - "80:80"
+    volumes:
+      - /var/run/docker.sock:/var/run/docker.sock
+
+  dashboard.composer:
+    container_name: 'dashboard.composer'
+    image: composer
+    volumes:
+      - ./sources/dashboard:/var/www/html:rw
+    command: install --working-dir=/var/www/html/ --ignore-platform-reqs
+
+  dashboard:
+    container_name: 'dashboard'
+    image: thecodingmachine/php:7.4-v3-apache-node10
+    labels:
+      - traefik.enable=true
+      - traefik.backend=dashboard
+      - traefik.frontend.rule=Host:dashboard.localhost
+    environment:
+      APACHE_DOCUMENT_ROOT: "public/"
+      PHP_EXTENSION_XDEBUG: "1"
+      PHP_INI_MEMORY_LIMIT: "1G"
+      # Symfony
+      APP_ENV: "dev"
+      APP_SECRET: "8d2a5c935d8ef1c0e2b751147382bc75"
+    volumes:
+      - ./sources/dashboard:/var/www/html:rw
+
+  api.composer:
+    container_name: 'api.composer'
+    image: composer
+    volumes:
+      - ./sources/api:/var/www/html:rw
+    command: install --working-dir=/var/www/html/ --ignore-platform-reqs
+
+  api:
+    image: thecodingmachine/php:7.4-v3-apache
+    links:
+      - mysql
+    depends_on:
+      - api.composer
+    labels:
+      - traefik.enable=true
+      - traefik.backend=api
+      - traefik.frontend.rule=Host:api.localhost
+    environment:
+      APACHE_DOCUMENT_ROOT: "public/"
+      PHP_EXTENSION_XDEBUG: "1"
+      PHP_INI_MEMORY_LIMIT: "1G"
+      # Symfony
+      APP_ENV: "dev"
+      APP_SECRET: "8d2a5c935d8ef1c0e2b751147382bc75"
+      REDIS_URL: redis://redis
+    volumes:
+      - ./sources/api:/var/www/html:rw
+
+  mysql:
+    image: mysql:5.7
+    environment:
+      MYSQL_ROOT_PASSWORD: "$MYSQL_ROOT_PASSWORD"
+      MYSQL_DATABASE: "$MYSQL_DATABASE"
+      MYSQL_USER: "$MYSQL_USER"
+      MYSQL_PASSWORD: "$MYSQL_PASSWORD"
+    volumes:
+      - mysql_data:/var/lib/mysql
+      - ./services/mysql/utf8mb4.cnf:/etc/mysql/conf.d/utf8mb4.cnf:ro
+
+  mysql_tests:
+    image: mysql:5.7
+    environment:
+      MYSQL_ROOT_PASSWORD: "root"
+      MYSQL_DATABASE: "main"
+      MYSQL_USER: "mysql"
+      MYSQL_PASSWORD: "mysql"
+    volumes:
+      - ./services/mysql/utf8mb4.cnf:/etc/mysql/conf.d/utf8mb4.cnf:ro
+
+  phpmyadmin:
+    image: phpmyadmin/phpmyadmin:4.7
+    labels:
+      - traefik.enable=true
+      - traefik.backend=phpmyadmin
+      - traefik.frontend.rule=Host:phpmyadmin.dashboard.localhost
+    environment:
+      PMA_HOST: "mysql"
+      PMA_USER: "$MYSQL_USER"
+      PMA_PASSWORD: "$MYSQL_PASSWORD"
+
+volumes:
+  mysql_data:
+    driver: local

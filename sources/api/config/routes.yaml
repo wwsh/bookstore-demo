@@ -1,0 +1,7 @@
+book:
+    type:     rest
+    resource: Ddd\Application\Controller\BookController
+
+category:
+    type:     rest
+    resource: Ddd\Application\Controller\CategoryController

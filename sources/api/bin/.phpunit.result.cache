@@ -1,0 +1,1 @@
+C:37:"PHPUnit\Runner\DefaultTestResultCache":262:{a:2:{s:7:"defects";a:1:{s:95:"App\Tests\Unit\Translator\VersionNumberTranslatorTest::testTranslateLabelToInt with data set #0";i:4;}s:5:"times";a:1:{s:95:"App\Tests\Unit\Translator\VersionNumberTranslatorTest::testTranslateLabelToInt with data set #0";d:0.002;}}}
